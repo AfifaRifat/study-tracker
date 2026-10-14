@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Study Tracker</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f5fb;
+      color: #20243a;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    h1 { color: #5146d8; }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 14px;
+      margin: 16px 0;
+      box-shadow: 0 3px 12px #20243a10;
+    }
+
+    label { display: block; margin-top: 12px; }
+    input, textarea, button {
+      font: inherit;
+      padding: 11px;
+      margin-top: 6px;
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    input, textarea { border: 1px solid #d5d8e5; }
+    button {
+      background: #5146d8;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .stats { display: flex; gap: 12px; }
+    .stats .card { flex: 1; min-width: 0; }
+    .number { font-size: 26px; font-weight: bold; }
+    .session {
+      border-bottom: 1px solid #eee;
+      padding: 12px 0;
+    }
+
+    .delete {
+      background: #d94747;
+      width: auto;
+      padding: 8px 12px;
+    }
+
+    @media (max-width: 450px) {
+      .stats { flex-direction: column; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 My Study Tracker</h1>
+  <p>Small steps every day lead to big results!</p>
+
+  <div class="stats">
+    <div class="card">
+      <div>Total hours</div>
+      <div class="number" id="totalHours">0</div>
+    </div>
+    <div class="card">
+      <div>Study sessions</div>
+      <div class="number" id="totalSessions">0</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Add a study session</h2>
+    <form id="studyForm">
+      <label for="subject">Subject</label>
+      <input id="subject" placeholder="e.g. JavaScript" required>
+
+      <label for="hours">Hours studied</label>
+      <input id="hours" type="number" min="0.1"
+        max="24" step="0.1" placeholder="e.g. 1.5" required>
+
+      <label for="date">Study date</label>
+      <input id="date" type="date" required>
+
+      <label for="notes">What did you learn?</label>
+      <textarea id="notes" placeholder="Optional notes"></textarea>
+
+      <button type="submit">Add Session</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>My study history</h2>
+    <div id="sessions"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("studyForm");
+    const subjectInput = document.getElementById("subject");
+    const hoursInput = document.getElementById("hours");
+    const dateInput = document.getElementById("date");
+    const notesInput = document.getElementById("notes");
+    const sessionsDiv = document.getElementById("sessions");
+
+    let sessions = JSON.parse(
+      localStorage.getItem("studySessions") || "[]"
+    );
+
+    dateInput.value = new Date().toLocaleDateString("en-CA");
+
+    function saveSessions() {
+      localStorage.setItem(
+        "studySessions", JSON.stringify(sessions)
+      );
+    }
+
+    function renderSessions() {
+      const total = sessions.reduce(
+        (sum, session) => sum + session.hours, 0
+      );
+
+      document.getElementById("totalHours").textContent =
+        total.toFixed(1);
+      document.getElementById("totalSessions").textContent =
+        sessions.length;
+
+      sessionsDiv.replaceChildren();
+
+      if (sessions.length === 0) {
+        sessionsDiv.textContent =
+          "No sessions yet. Add your first one above!";
+        return;
+      }
+
+      [...sessions].reverse().forEach(session => {
+        const item = document.createElement("div");
+        item.className = "session";
+
+        const title = document.createElement("strong");
+        title.textContent =
+          `${session.subject} — ${session.hours} hours`;
+
+        const date = document.createElement("p");
+        date.textContent = session.date;
+
+        const notes = document.createElement("p");
+        notes.textContent = session.notes;
+
+        const remove = document.createElement("button");
+        remove.className = "delete";
+        remove.textContent = "Delete";
+        remove.addEventListener("click", () => {
+          sessions = sessions.filter(s => s.id !== session.id);
+          saveSessions();
+          renderSessions();
+        });
+
+        item.append(title, date, notes, remove);
+        sessionsDiv.append(item);
+      });
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+
+      sessions.push({
+        id: crypto.randomUUID(),
+        subject: subjectInput.value.trim(),
+        hours: Number(hoursInput.value),
+        date: dateInput.value,
+        notes: notesInput.value.trim()
+      });
+
+      saveSessions();
+      renderSessions();
+      form.reset();
+      dateInput.value = new Date().toLocaleDateString("en-CA");
+    });
+
+    renderSessions();
+  </script>
+</body>
+</html>
